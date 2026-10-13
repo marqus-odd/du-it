@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Du-it</title>
+<style>
+  :root {
+    --bg: #F7F6F3;
+    --ink: #1F2421;
+    --muted: #6B6960;
+    --border: #DEDACF;
+    --paper: #FFFFFF;
+    --study: #3D5A50;
+    --music: #A8763E;
+    --workout: #B5533C;
+    --walk: #4A5B72;
+    --eating: #7A7550;
+    --sleep: #3A3F63;
+    --health: #6B5570;
+    --drink: #7A4B32;
+    --other: #6B6960;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181A;
+      --ink: #F2F1EC;
+      --muted: #9A968C;
+      --border: #33352F;
+      --paper: #201F1D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181A;
+    --ink: #F2F1EC;
+    --muted: #9A968C;
+    --border: #33352F;
+    --paper: #201F1D;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    height: 100%; overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+  button { font-family: inherit; }
+  input[type="time"], input[type="text"], input[type="number"] {
+    font-family: inherit; background: var(--bg); color: var(--ink);
+    border: 1.5px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    font-size: 15px; width: 100%; transition: border-color 0.12s ease;
+  }
+  input[type="time"]:focus, input[type="text"]:focus, input[type="number"]:focus {
+    outline: none; border-color: var(--ink);
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .header { padding: max(20px, env(safe-area-inset-top)) 20px 12px; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .title { font-size: 23px; font-weight: 650; letter-spacing: -0.4px; }
+  .streak { font-size: 13px; color: var(--muted); }
+  .day-nav { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .nav-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: 16px; color: var(--muted); transition: transform 0.08s ease; }
+  .nav-btn:active { transform: scale(0.9); }
+  .nav-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .day-total { font-size: 13px; color: var(--muted); min-width: 100px; }
+  .content { flex: 1; padding: 0 20px 110px; overflow-y: auto; }
+  .empty { padding: 50px 0; text-align: center; color: var(--muted); }
+  .empty .sub { font-size: 13px; margin-top: 4px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .block { border-radius: 7px; padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 20px; color: #fff; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.14); transition: transform 0.08s ease; }
+  .block:active { transform: scale(0.985); }
+  .block-main { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+  .block .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block .note { font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.72); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .block .dur { font-size: 13px; color: rgba(255,255,255,0.92); flex-shrink: 0; }
+  .del-btn { background: none; border: none; cursor: pointer; padding: 4px; flex-shrink: 0; color: var(--border); font-size: 16px; line-height: 1; transition: transform 0.08s ease; }
+  .del-btn:active { transform: scale(0.85); }
+  .row-actions { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+  .reorder-btn { background: none; border: none; cursor: pointer; padding: 4px; color: var(--muted); font-size: 9px; line-height: 1; transition: transform 0.08s ease; }
+  .reorder-btn:active { transform: scale(0.85); }
+  .reorder-btn:disabled { opacity: 0.2; pointer-events: none; }
+  .block.food { width: auto !important; max-width: 100%; }
+  .block .time { font-size: 12px; color: rgba(255,255,255,0.78); flex-shrink: 0; }
+  .note-dot { font-size: 10px; opacity: 0.75; }
+  .sleep-card { background: var(--paper); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .sleep-card .label { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .sleep-times { display: flex; gap: 10px; margin-bottom: 12px; }
+  .sleep-times > div { flex: 1; }
+  .sleep-times label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .save-btn { width: 100%; padding: 13px 0; border-radius: 9px; border: none; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.08s ease; }
+  .save-btn:active { transform: scale(0.98); }
+  .save-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+  .fab { position: absolute; right: 20px; bottom: 84px; width: 54px; height: 54px; border-radius: 50%; background: var(--ink); color: var(--bg); border: none; cursor: pointer; font-size: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 12px rgba(0,0,0,0.28); z-index: 5; transition: transform 0.08s ease; }
+  .fab:active { transform: scale(0.94); }
+  .tabbar { position: sticky; bottom: 0; background: var(--paper); border-top: 1px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); }
+  .tab { flex: 1; padding: 14px 0; background: none; border: none; cursor: pointer; font-size: 14px; color: var(--muted); border-top: 2px solid transparent; margin-top: -1px; transition: color 0.12s ease, border-color 0.12s ease; }
+  .tab.active { color: var(--ink); font-weight: 600; border-top: 2px solid var(--ink); }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+  .sheet { background: var(--paper); width: 100%; max-width: 480px; border-radius: 16px 16px 0 0; padding: 10px 20px calc(28px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
+  .handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+  .sheet-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .sheet-title { font-size: 17px; font-weight: 600; }
+  .close-btn { background: none; border: none; cursor: pointer; padding: 4px; font-size: 20px; color: var(--muted); transition: transform 0.08s ease; }
+  .close-btn:active { transform: scale(0.88); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip { padding: 10px 15px; border-radius: 8px; font-size: 13.5px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border); background: transparent; color: var(--ink); display: flex; align-items: center; gap: 6px; transition: background-color 0.1s ease, border-color 0.1s ease, transform 0.08s ease; }
+  .chip:active { transform: scale(0.96); }
+  .chip.active { color: #fff; }
+  .chip .x { font-size: 13px; opacity: 0.85; }
+  .section-label { font-size: 13px; color: var(--muted); margin: 6px 0 8px; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin: 4px 0 18px; font-size: 13.5px; color: var(--muted); }
+  .toggle-row input { width: 16px; height: 16px; }
+  .bar-row { margin-bottom: 14px; }
+  .bar-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .bar-track { height: 9px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .week-dots { display: flex; justify-content: space-between; margin-bottom: 20px; }
+  .week-dots > div { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; border: 1.5px solid var(--border); }
+  .dot.on { background: var(--ink); border-color: var(--ink); }
+  .wk-day { font-size: 11px; color: var(--muted); }
+  .avg-sleep { font-size: 13.5px; color: var(--muted); margin-bottom: 18px; }
+  .goals-block { margin-bottom: 22px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .goals-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .goals-title { font-size: 13px; color: var(--muted); }
+  .link-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; text-decoration: underline; padding: 4px 0; }
+  .goals-hint { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .goal-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .goal-check { font-size: 12px; color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  var CATEGORIES = {
+    study:   { label: 'Study', color: 'var(--study)' },
+    music:   { label: 'Music', color: 'var(--music)' },
+    workout: { label: 'Workout', color: 'var(--workout)' },
+    walk:    { label: 'Walk', color: 'var(--walk)' },
+    eating:  { label: 'Food', color: 'var(--eating)' },
+    sleep:   { label: 'Sleep', color: 'var(--sleep)' },
+    health:  { label: 'Health', color: 'var(--health)' },
+    drink:   { label: 'Drink', color: 'var(--drink)' },
+    other:   { label: 'Other', color: 'var(--other)' },
+  };
+  var DEFAULT_PRESETS = [
+    { id: 'p-eating', name: 'Food', category: 'eating', builtin: true },
+    { id: 'p-pill', name: 'Pill', category: 'health', builtin: true, instant: true },
+    { id: 'p-creatine', name: 'Creatine', category: 'health', builtin: true, instant: true },
+  ];
+  var MODULES = [
+    { id: 'm-aerobics', label: 'Aerobics training', category: 'walk', type: 'single', prompt: 'Choose one', options: ['Running', 'Walking', 'Cycling', 'Fútbol'] },
+    { id: 'm-playing', label: 'Playing', category: 'music', type: 'single', prompt: 'Choose one', options: ['Piano', 'Guitar', 'Drums', 'Bass'] },
+    { id: 'm-weights', label: 'Weight training', category: 'workout', type: 'multi', prompt: 'Select one or more', options: ['Chest', 'Back', 'Legs', 'Shoulders', 'Triceps', 'Biceps'] },
+    { id: 'm-study', label: 'Study', category: 'study', type: 'text', prompt: 'Which course?' },
+    { id: 'm-drink', label: 'Drink', category: 'drink', type: 'single-instant', prompt: 'Choose one', options: ['Tea', 'Mate', 'Coffee'] },
+  ];
+  var FUTBOL_RESULTS = ['Win', 'Draw', 'Loss'];
+  var FUTBOL_FORMATS = ['F5', 'F8'];
+  var FUTBOL_TYPES = ['Torneo', 'Mixto', 'Amistoso'];
+  var QUICK_MINUTES = [15, 30, 45, 60, 90];
+  var MAX_BAR_MINUTES = 180;
+  var MAX_SLEEP_MINUTES = 600;
+  var PAIR_CATS = ['study', 'music', 'workout', 'walk', 'eating', 'drink'];
+  var CONSUME_CATEGORIES = ['eating', 'health', 'drink'];
+  function isConsumeCategory(cat) { return CONSUME_CATEGORIES.indexOf(cat) !== -1; }
+  function groupOf(e) { return isConsumeCategory(e.category) ? 'consume' : 'activity'; }
+
+  var today = new Date();
+  var state = {
+    viewDate: new Date(),
+    tab: 'log',
+    showAdd: false,
+    addSelected: null,       // preset id or 'new'
+    addCustomName: '',
+    addCustomCategory: 'other',
+    addOccasional: false,
+    addMinutes: 30,
+    addFoodName: '',
+    addTime: '',
+    addNote: '',
+    addSubOption: '',
+    addSubOptions: [],
+    addCourseName: '',
+    addDistance: '',
+    addVolume: '',
+    addFutbolResult: '',
+    addFutbolFormat: '',
+    addFutbolType: '',
+    sleepEditing: false,
+    sleepBed: '23:30',
+    sleepWake: '07:30',
+    showGoals: false,
+    longestStreak: null,
+    _longestStreakLoading: false,
+    expandedNotes: {},
+  };
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseDateKey(k) { var p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function addDays(d, n) { var c = new Date(d); c.setDate(c.getDate() + n); return c; }
+  function sameDate(a, b) { return dateKey(a) === dateKey(b); }
+  // A home-screen web app can stay alive in the background for days. Without this,
+  // "today" would stay frozen at whenever the app was first opened, so new entries
+  // (sleep included) would land on the wrong date.
+  function refreshToday() {
+    var now = new Date();
+    if (dateKey(now) === dateKey(today)) return;
+    var wasViewingToday = sameDate(state.viewDate, today);
+    today = now;
+    if (wasViewingToday) state.viewDate = new Date(now);
+    state.longestStreak = null;
+  }
+  function fmtMinutes(m) {
+    var h = Math.floor(m / 60), r = m % 60;
+    if (h === 0) return r + 'm';
+    if (r === 0) return h + 'h';
+    return h + 'h ' + r + 'm';
+  }
+  function dayLabel(d) {
+    if (sameDate(d, today)) return 'Today';
+    if (sameDate(d, addDays(today, -1))) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function weekdayShort(d) { return d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 1); }
+  function sleepMinutes(bed, wake) {
+    var b = bed.split(':').map(Number), w = wake.split(':').map(Number);
+    var bm = b[0] * 60 + b[1], wm = w[0] * 60 + w[1];
+    var diff = wm - bm;
+    if (diff <= 0) diff += 24 * 60;
+    return diff;
+  }
+  function timeToMinutes(t) {
+    var p = t.split(':').map(Number);
+    return p[0] * 60 + p[1];
+  }
+  function formatTime12(t) {
+    var p = t.split(':').map(Number);
+    var h = p[0], m = p[1];
+    var ampm = h >= 12 ? 'pm' : 'am';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + pad(m) + ampm;
+  }
+  function circularMeanMinutes(minsList) {
+    // Circular mean: treat each time as an angle on a 24h clock and average the
+    // vector components, so it handles any spread (including wraparound near
+    // midnight) correctly — a plain numeric average breaks whenever times land
+    // on both sides of the wrap point.
+    var sumSin = 0, sumCos = 0;
+    minsList.forEach(function (t) {
+      var angle = (t / 1440) * 2 * Math.PI;
+      sumSin += Math.sin(angle);
+      sumCos += Math.cos(angle);
+    });
+    var avgAngle = Math.atan2(sumSin / minsList.length, sumCos / minsList.length);
+    if (avgAngle < 0) avgAngle += 2 * Math.PI;
+    return (avgAngle / (2 * Math.PI)) * 1440;
+  }
+  function avgClockTime(minsList) {
+    var avgMins = Math.round(circularMeanMinutes(minsList)) % 1440;
+    return formatTime12(pad(Math.floor(avgMins / 60)) + ':' + pad(avgMins % 60));
+  }
+  // Regularity: on average, how many minutes each time sits away from your usual
+  // (circular-mean) time. Lower = more regular.
+  function clockSpreadMinutes(minsList) {
+    var mean = circularMeanMinutes(minsList);
+    var total = 0;
+    minsList.forEach(function (t) {
+      var d = Math.abs(t - mean);
+      if (d > 720) d = 1440 - d;
+      total += d;
+    });
+    return Math.round(total / minsList.length);
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ---- storage: db (durable, synced to your account) is the source of truth;
+  // localStorage is a fast local mirror so the UI never waits on a network call. ----
+  var db = null;
+  var dayCache = {};
+  var dayLoading = {};
+  var dayFetched = {};
+  var presetsCache = null;
+  var presetsLoading = false;
+  var presetsFetched = false;
+
+  // Background syncs (db connecting, day/preset fetches) must never yank the DOM
+  // out from under an in-progress tap. If the Add sheet is open, skip the render —
+  // the cache is already updated, so the data shows up the moment the sheet closes.
+  function safeRender() {
+    if (!state.showAdd && !state.showGoals) render();
+  }
+
+  // ---- weekly goals (optional; any field can be left empty) ----
+  var goalsCache = null;
+  var goalsLoading = false;
+  var goalsFetched = false;
+  function getGoals() {
+    if (goalsCache === null) {
+      try { var raw = localStorage.getItem('duit_goals'); goalsCache = raw ? JSON.parse(raw) : {}; } catch (e) { goalsCache = {}; }
+    }
+    if (db && !goalsFetched && !goalsLoading) {
+      goalsLoading = true;
+      db.doc('meta/goals').get().then(function (snap) {
+        goalsLoading = false;
+        goalsFetched = true;
+        if (snap.exists) {
+          goalsCache = JSON.parse(JSON.stringify(snap.data()));
+          try { localStorage.setItem('duit_goals', JSON.stringify(goalsCache)); } catch (e) {}
+          safeRender();
+        }
+      }).catch(function () { goalsLoading = false; goalsFetched = true; });
+    }
+    return goalsCache;
+  }
+  function persistGoals(g) {
+    goalsCache = g;
+    goalsFetched = true;
+    try { localStorage.setItem('duit_goals', JSON.stringify(g)); } catch (e) {}
+    if (db) {
+      db.doc('meta/goals').set(g).catch(function () {
+        showError('Saved on this device, but syncing to your account failed.');
+      });
+    }
+  }
+
+  function localDay(key) {
+    try { var raw = localStorage.getItem('duit_day_' + key); if (raw) return JSON.parse(raw); } catch (e) {}
+    return null;
+  }
+  function localSaveDay(key, data) {
+    try { localStorage.setItem('duit_day_' + key, JSON.stringify(data)); } catch (e) {}
+  }
+  function localPresets() {
+    try { var raw = localStorage.getItem('duit_presets'); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
+  }
+  function localSavePresets(list) {
+    try { localStorage.setItem('duit_presets', JSON.stringify(list)); } catch (e) {}
+  }
+
+  function getDay(d) {
+    var key = dateKey(d);
+    if (!dayCache[key]) {
+      dayCache[key] = localDay(key) || { sleep: null, activities: [] };
+    }
+    if (db && !dayFetched[key] && !dayLoading[key]) {
+      dayLoading[key] = true;
+      db.doc('days/' + key).get().then(function (snap) {
+        dayLoading[key] = false;
+        dayFetched[key] = true;
+        if (snap.exists) {
+          dayCache[key] = JSON.parse(JSON.stringify(snap.data()));
+          localSaveDay(key, dayCache[key]);
+          safeRender();
+        }
+      }).catch(function () { dayLoading[key] = false; dayFetched[key] = true; });
+    }
+    return dayCache[key];
+  }
+
+  function persistDay(d, data) {
+    var key = dateKey(d);
+    dayCache[key] = data;
+    dayFetched[key] = true;
+    localSaveDay(key, data);
+    if (db) {
+      db.doc('days/' + key).set(data).catch(function () {
+        showError('Saved on this device, but syncing to your account failed.');
+      });
+    }
+    render();
+  }
+
+  function getPresets() {
+    if (presetsCache === null) presetsCache = localPresets();
+    if (db && !presetsFetched && !presetsLoading) {
+      presetsLoading = true;
+      db.doc('meta/presets').get().then(function (snap) {
+        presetsLoading = false;
+        presetsFetched = true;
+        if (snap.exists && Array.isArray(snap.data().list)) {
+          presetsCache = JSON.parse(JSON.stringify(snap.data().list));
+          localSavePresets(presetsCache);
+          safeRender();
+        }
+      }).catch(function () { presetsLoading = false; presetsFetched = true; });
+    }
+    return presetsCache;
+  }
+
+  function persistPresets(list) {
+    presetsCache = list;
+    presetsFetched = true;
+    localSavePresets(list);
+    if (db) {
+      db.doc('meta/presets').set({ list: list }).catch(function () {
+        showError('Saved on this device, but syncing to your account failed.');
+      });
+    }
+  }
+
+  function loadPresets() { return DEFAULT_PRESETS.concat(getPresets()); }
+  function addCustomPreset(name, category) {
+    var list = getPresets().slice();
+    var preset = { id: 'c-' + Date.now(), name: name, category: category, builtin: false };
+    list.push(preset);
+    persistPresets(list);
+    return preset;
+  }
+  function removeCustomPreset(id) {
+    persistPresets(getPresets().filter(function (p) { return p.id !== id; }));
+  }
+
+  function computeStreak() {
+    var count = 0, d = new Date(today);
+    while (true) {
+      var day = getDay(d);
+      var hasData = day.sleep || (day.activities && day.activities.length > 0);
+      if (!hasData) break;
+      count++;
+      d = addDays(d, -1);
+    }
+    return count;
+  }
+
+  function computeCategoryStreak(category) {
+    var count = 0, d = new Date(today);
+    while (true) {
+      var day = getDay(d);
+      var has = day.activities.some(function (e) { return e.category === category; });
+      if (!has) break;
+      count++;
+      d = addDays(d, -1);
+    }
+    return count;
+  }
+
+  function weekDeltaLabel(cur, prev) {
+    if (prev === 0 && cur === 0) return '';
+    if (prev === 0) return ' (new)';
+    var diff = cur - prev;
+    if (diff === 0) return ' (=)';
+    return ' (' + (diff > 0 ? '+' : '–') + fmtMinutes(Math.abs(diff)) + ')';
+  }
+
+  function loadLongestStreak() {
+    if (!db || state._longestStreakLoading) return;
+    state._longestStreakLoading = true;
+    db.collection('days').limit(1000).get().then(function (snap) {
+      state._longestStreakLoading = false;
+      var ids = snap.docs.map(function (doc) { return doc.id; }).sort();
+      var longest = 0, current = 0, prevDate = null;
+      ids.forEach(function (idStr) {
+        var d = parseDateKey(idStr);
+        current = (prevDate && (d - prevDate) === 86400000) ? current + 1 : 1;
+        if (current > longest) longest = current;
+        prevDate = d;
+      });
+      state.longestStreak = longest;
+      safeRender();
+    }).catch(function () { state._longestStreakLoading = false; });
+  }
+
+  function computeInsights(weekDays) {
+    var catDays = {}, pairCounts = {}, sleepWith = {}, sleepWithout = {};
+    weekDays.forEach(function (wd) {
+      var present = {};
+      wd.day.activities.forEach(function (e) { present[e.category] = true; });
+      var sleepMins = wd.day.sleep ? wd.day.sleep.minutes : null;
+      PAIR_CATS.forEach(function (c) {
+        if (present[c]) {
+          catDays[c] = (catDays[c] || 0) + 1;
+          if (sleepMins != null) { sleepWith[c] = sleepWith[c] || { sum: 0, count: 0 }; sleepWith[c].sum += sleepMins; sleepWith[c].count++; }
+        } else if (sleepMins != null) {
+          sleepWithout[c] = sleepWithout[c] || { sum: 0, count: 0 }; sleepWithout[c].sum += sleepMins; sleepWithout[c].count++;
+        }
+      });
+      var presentCats = Object.keys(present).filter(function (c) { return PAIR_CATS.indexOf(c) !== -1; });
+      for (var i = 0; i < presentCats.length; i++) {
+        for (var j = i + 1; j < presentCats.length; j++) {
+          var key = [presentCats[i], presentCats[j]].sort().join('|');
+          pairCounts[key] = (pairCounts[key] || 0) + 1;
+        }
+      }
+    });
+
+    var insights = [];
+    var bestPair = null, bestPairCount = 1;
+    Object.keys(pairCounts).forEach(function (k) {
+      if (pairCounts[k] > bestPairCount) { bestPairCount = pairCounts[k]; bestPair = k; }
+    });
+    if (bestPair) {
+      var parts = bestPair.split('|');
+      insights.push(CATEGORIES[parts[0]].label + ' + ' + CATEGORIES[parts[1]].label + ' — logged together on ' + bestPairCount + ' of the last 7 days');
+    }
+    var bestCat = null, bestAbsDiff = 0, bestDiffVal = 0;
+    PAIR_CATS.forEach(function (c) {
+      var w = sleepWith[c], wo = sleepWithout[c];
+      if (w && wo && w.count >= 2 && wo.count >= 2) {
+        var diff = (w.sum / w.count) - (wo.sum / wo.count);
+        if (Math.abs(diff) > bestAbsDiff) { bestAbsDiff = Math.abs(diff); bestDiffVal = diff; bestCat = c; }
+      }
+    });
+    if (bestCat && bestAbsDiff >= 30) {
+      var verb = bestDiffVal > 0 ? 'more' : 'less';
+      insights.push('You sleep ' + fmtMinutes(Math.round(bestAbsDiff)) + ' ' + verb + ' on days you log ' + CATEGORIES[bestCat].label.toLowerCase());
+    }
+    return insights;
+  }
+
+  var errorTimeout = null;
+  function showError(msg) {
+    state._error = msg;
+    render();
+    if (errorTimeout) clearTimeout(errorTimeout);
+    errorTimeout = setTimeout(function () { state._error = null; render(); }, 6000);
+  }
+
+  window.addEventListener('error', function (e) {
+    showError('Error: ' + (e.message || 'something went wrong') + (e.lineno ? ' (line ' + e.lineno + ')' : ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var reason = e.reason;
+    showError('Error: ' + (reason && reason.message ? reason.message : String(reason)));
+  });
+
+  function render() {
+    refreshToday();
+    var root = document.getElementById('app');
+    var day = getDay(state.viewDate);
+    var isToday = sameDate(state.viewDate, today);
+    var totalToday = day.activities.reduce(function (s, e) { return s + e.minutes; }, 0);
+    var streak = computeStreak();
+
+    var html = '';
+    html += '<div class="header">';
+    html += '<div class="header-row"><div class="title">' + (state.tab === 'log' ? dayLabel(state.viewDate) : 'This week') + '</div>';
+    if (streak > 0) html += '<div class="streak mono">' + streak + '-day streak</div>';
+    html += '</div>';
+    if (state.tab === 'log') {
+      html += '<div class="day-nav">';
+      html += '<button class="nav-btn" data-action="prev-day">&#8249;</button>';
+      var hasAnything = totalToday > 0 || day.sleep || day.activities.length > 0;
+      html += '<div class="day-total mono">' + (totalToday > 0 ? fmtMinutes(totalToday) + ' logged' : (hasAnything ? 'logged' : 'nothing yet')) + '</div>';
+      html += '<button class="nav-btn" data-action="next-day"' + (isToday ? ' disabled' : '') + '>&#8250;</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    if (state._error) {
+      html += '<div style="margin:0 20px 12px;padding:10px 12px;background:#F4E3DE;color:#7A3524;font-size:13px;border-radius:4px;">' + escapeHtml(state._error) + '</div>';
+    }
+
+    html += '<div class="content">';
+    if (state.tab === 'log') {
+      html += renderSleepCard(day);
+      if (day.activities.length === 0) {
+        html += '<div class="empty"><div>Nothing logged ' + (isToday ? 'yet' : 'this day') + '.</div>';
+        if (isToday) html += '<div class="sub">Tap + to add what you did.</div>';
+        html += '</div>';
+      } else {
+        var activityEntries = day.activities.filter(function (e) { return groupOf(e) === 'activity'; });
+        var consumeEntries = day.activities.filter(function (e) { return groupOf(e) === 'consume'; });
+        if (activityEntries.length) {
+          html += '<div class="section-label">Activities</div>';
+          activityEntries.forEach(function (e, idx) { html += renderEntryRow(e, idx, activityEntries.length); });
+        }
+        if (consumeEntries.length) {
+          html += '<div class="section-label">Consumed</div>';
+          consumeEntries.forEach(function (e, idx) { html += renderEntryRow(e, idx, consumeEntries.length); });
+        }
+      }
+    } else {
+      html += renderStats();
+    }
+    html += '</div>';
+
+    if (state.tab === 'log') {
+      html += '<button class="fab" data-action="open-add">+</button>';
+    }
+
+    html += '<div class="tabbar">';
+    html += '<button class="tab' + (state.tab === 'log' ? ' active' : '') + '" data-action="tab-log">Log</button>';
+    html += '<button class="tab' + (state.tab === 'stats' ? ' active' : '') + '" data-action="tab-stats">Stats</button>';
+    html += '</div>';
+
+    if (state.showAdd) html += renderAddSheet();
+    if (state.showGoals) html += renderGoalsSheet();
+
+    root.innerHTML = html;
+    attachHandlers(day);
+  }
+
+  function computeCanSave() {
+    var presets = loadPresets();
+    var isFoodMode = state.addSelected === 'p-eating';
+    var currentModule = MODULES.filter(function (m) { return m.id === state.addSelected; })[0] || null;
+    var currentPreset = presets.filter(function (p) { return p.id === state.addSelected; })[0] || null;
+    var isInstantMode = (currentPreset && currentPreset.instant) || (currentModule && currentModule.type === 'single-instant');
+    if (isFoodMode) return state.addFoodName.trim().length > 0;
+    if (isInstantMode) return currentModule ? !!state.addSubOption : true;
+    if (currentModule) {
+      if (currentModule.type === 'text') return state.addCourseName.trim().length > 0 && state.addMinutes > 0;
+      if (currentModule.type === 'multi') return state.addSubOptions.length > 0 && state.addMinutes > 0;
+      return !!state.addSubOption && state.addMinutes > 0;
+    }
+    return !!(state.addSelected && (state.addSelected !== 'new' || state.addCustomName.trim().length > 0) && state.addMinutes > 0);
+  }
+
+  function syncSaveButton() {
+    var btn = document.querySelector('[data-action="save-entry"]');
+    if (btn) btn.disabled = !computeCanSave();
+  }
+
+  function renderFieldChips(label, field, options, color) {
+    var h = '<div class="section-label">' + label + '</div><div class="chips">';
+    options.forEach(function (opt) {
+      var active = state[field] === opt;
+      h += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + color + ';border-color:' + color : '') + '" data-action="select-field" data-field="' + field + '" data-value="' + escapeHtml(opt) + '">' + escapeHtml(opt) + '</button>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  function renderEntryRow(e, idx, groupLen) {
+    var cat = CATEGORIES[e.category] || CATEGORIES.other;
+    var isCompact = e.category === 'eating' || e.instant;
+    var html = '<div class="row">';
+    if (isCompact) {
+      html += '<div class="block food" style="background:' + cat.color + '" data-action="noop">';
+      html += '<span class="name">' + escapeHtml(e.name) + '</span>';
+      if (e.time) html += '<span class="time mono">' + escapeHtml(formatTime12(e.time)) + '</span>';
+      html += '</div>';
+    } else {
+      var widthPct = Math.max(38, Math.min(100, (e.minutes / MAX_BAR_MINUTES) * 100));
+      var hasNote = !!e.note;
+      var expanded = hasNote && !!state.expandedNotes[e.id];
+      var subParts = [];
+      if (e.time) subParts.push(formatTime12(e.time));
+      if (e.distance) subParts.push(e.distance + 'km');
+      if (e.volume) subParts.push(e.volume + 'kg');
+      if (e.result) subParts.push(e.result);
+      if (e.format) subParts.push(e.format);
+      if (e.matchType) subParts.push(e.matchType);
+      if (expanded) subParts.push(e.note);
+      html += '<div class="block" style="width:' + widthPct + '%;background:' + cat.color + '" data-action="' + (hasNote ? 'toggle-note' : 'noop') + '" data-id="' + e.id + '">';
+      html += '<div class="block-main"><span class="name">' + escapeHtml(e.name) + (hasNote && !expanded ? ' <span class="note-dot">&bull;</span>' : '') + '</span>';
+      if (subParts.length) html += '<span class="note">' + escapeHtml(subParts.join(' · ')) + '</span>';
+      html += '</div><span class="dur mono">' + fmtMinutes(e.minutes) + '</span>';
+      html += '</div>';
+    }
+    html += '<div class="row-actions">';
+    html += '<button class="reorder-btn" data-action="move-up" data-id="' + e.id + '"' + (idx === 0 ? ' disabled' : '') + '>&#9650;</button>';
+    html += '<button class="reorder-btn" data-action="move-down" data-id="' + e.id + '"' + (idx === groupLen - 1 ? ' disabled' : '') + '>&#9660;</button>';
+    html += '<button class="del-btn" data-action="delete-entry" data-id="' + e.id + '">&times;</button>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  function renderSleepCard(day) {
+    if (day.sleep && !state.sleepEditing) {
+      var mins = day.sleep.minutes;
+      var widthPct = Math.max(38, Math.min(100, (mins / MAX_SLEEP_MINUTES) * 100));
+      return '<div class="row">' +
+        '<div class="block" style="width:' + widthPct + '%;background:var(--sleep)" data-action="edit-sleep">' +
+        '<div class="block-main"><span class="name">Sleep</span><span class="note">' + escapeHtml(formatTime12(day.sleep.bed)) + ' – ' + escapeHtml(formatTime12(day.sleep.wake)) + '</span></div>' +
+        '<span class="dur mono">' + fmtMinutes(mins) + '</span>' +
+        '</div>' +
+        '<button class="del-btn" data-action="clear-sleep">&times;</button>' +
+        '</div>';
+    }
+    var bed = day.sleep ? day.sleep.bed : state.sleepBed;
+    var wake = day.sleep ? day.sleep.wake : state.sleepWake;
+    return '<div class="sleep-card">' +
+      '<div class="label">How did you sleep last night?</div>' +
+      '<div class="sleep-times">' +
+      '<div><label>Bedtime</label><input type="time" id="sleep-bed" value="' + bed + '"></div>' +
+      '<div><label>Wake up</label><input type="time" id="sleep-wake" value="' + wake + '"></div>' +
+      '</div>' +
+      '<button class="save-btn" data-action="save-sleep">Save sleep</button>' +
+      '</div>';
+  }
+
+  function goalRow(label, right, pct, color, met) {
+    var width = pct > 0 ? Math.max(3, Math.min(100, pct)) : 0;
+    return '<div class="bar-row"><div class="bar-head"><span style="font-weight:600">' + label +
+      (met ? ' <span class="goal-check">&#10003;</span>' : '') + '</span><span class="mono" style="color:var(--muted)">' + right + '</span></div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + width + '%;background:' + color + '"></div></div></div>';
+  }
+
+  function renderGoalsBlock(studyMins, sleepTotalMins, bedList, wakeList) {
+    var g = getGoals();
+    var hasAny = !!(g.sleepHours || g.regMinutes || g.studyHours);
+    var h = '<div class="goals-block"><div class="goals-head"><span class="goals-title">Weekly goals</span>' +
+      '<button class="link-btn" data-action="open-goals">' + (hasAny ? 'Edit' : 'Set goals') + '</button></div>';
+    if (!hasAny) return h + '<div class="goals-hint">Set a target for sleep hours, regular sleep times, or study.</div></div>';
+
+    if (g.sleepHours) {
+      var sleepGoalMins = Math.round(g.sleepHours * 60);
+      h += goalRow('Sleep', fmtMinutes(sleepTotalMins) + ' / ' + fmtMinutes(sleepGoalMins),
+        (sleepTotalMins / sleepGoalMins) * 100, 'var(--sleep)', sleepTotalMins >= sleepGoalMins);
+    }
+    if (g.regMinutes) {
+      if (bedList.length < 3) {
+        h += '<div class="bar-row"><div class="bar-head"><span style="font-weight:600">Sleep regularity</span>' +
+          '<span class="mono" style="color:var(--muted)">log 3+ nights</span></div>' +
+          '<div class="goal-sub">Goal: bed and wake within &plusmn;' + g.regMinutes + 'm of your usual times</div></div>';
+      } else {
+        var bedDev = clockSpreadMinutes(bedList), wakeDev = clockSpreadMinutes(wakeList);
+        var regMet = bedDev <= g.regMinutes && wakeDev <= g.regMinutes;
+        h += '<div class="bar-row"><div class="bar-head"><span style="font-weight:600">Sleep regularity' +
+          (regMet ? ' <span class="goal-check">&#10003;</span>' : '') + '</span>' +
+          '<span class="mono" style="color:var(--muted)">bed &plusmn;' + bedDev + 'm · wake &plusmn;' + wakeDev + 'm</span></div>' +
+          '<div class="goal-sub">Goal: within &plusmn;' + g.regMinutes + 'm of your usual times</div></div>';
+      }
+    }
+    if (g.studyHours) {
+      var studyGoalMins = Math.round(g.studyHours * 60);
+      h += goalRow('Study', fmtMinutes(studyMins) + ' / ' + fmtMinutes(studyGoalMins),
+        (studyMins / studyGoalMins) * 100, 'var(--study)', studyMins >= studyGoalMins);
+    }
+    return h + '</div>';
+  }
+
+  function renderGoalsSheet() {
+    var g = getGoals();
+    var html = '<div class="overlay" data-action="close-goals">';
+    html += '<div class="sheet" onclick="event.stopPropagation()">';
+    html += '<div class="handle"></div>';
+    html += '<div class="sheet-title-row"><div class="sheet-title">Weekly goals</div><button class="close-btn" data-action="close-goals">&times;</button></div>';
+    html += '<div class="section-label">Sleep (hours per week)</div>';
+    html += '<input type="number" id="goal-sleep" class="mono" min="0" step="0.5" placeholder="e.g. 56" value="' + (g.sleepHours ? g.sleepHours : '') + '" style="margin-bottom:14px">';
+    html += '<div class="section-label">Sleep regularity (bed &amp; wake within &plusmn; minutes of your usual)</div>';
+    html += '<input type="number" id="goal-reg" class="mono" min="0" step="5" placeholder="e.g. 30" value="' + (g.regMinutes ? g.regMinutes : '') + '" style="margin-bottom:14px">';
+    html += '<div class="section-label">Study (hours per week)</div>';
+    html += '<input type="number" id="goal-study" class="mono" min="0" step="0.5" placeholder="e.g. 10" value="' + (g.studyHours ? g.studyHours : '') + '" style="margin-bottom:8px">';
+    html += '<div class="goal-sub" style="margin-bottom:16px">Leave a field empty for no goal. Progress is measured over the last 7 days.</div>';
+    html += '<button class="save-btn" data-action="save-goals">Save goals</button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderStats() {
+    if (state.longestStreak === null) loadLongestStreak();
+    var days = [];
+    for (var i = 6; i >= 0; i--) days.push(addDays(today, -i));
+    var weekDays = days.map(function (d) { return { date: d, day: getDay(d) }; });
+    var sums = {};
+    Object.keys(CATEGORIES).forEach(function (c) { if (c !== 'sleep') sums[c] = 0; });
+    var dayTotals = [];
+    var pillDays = 0, creatineDays = 0;
+    var weekSleepTotal = 0, weekBedList = [], weekWakeList = [];
+    weekDays.forEach(function (wd) {
+      var dd = wd.day;
+      var total = 0;
+      var hadPill = false, hadCreatine = false;
+      dd.activities.forEach(function (e) {
+        if (e.category === 'eating') return;
+        if (e.instant) {
+          if (e.name === 'Pill') hadPill = true;
+          if (e.name === 'Creatine') hadCreatine = true;
+          return;
+        }
+        sums[e.category] = (sums[e.category] || 0) + e.minutes;
+        total += e.minutes;
+      });
+      if (hadPill) pillDays++;
+      if (hadCreatine) creatineDays++;
+      if (dd.sleep) {
+        weekSleepTotal += dd.sleep.minutes;
+        weekBedList.push(timeToMinutes(dd.sleep.bed));
+        weekWakeList.push(timeToMinutes(dd.sleep.wake));
+      }
+      dayTotals.push({ date: wd.date, logged: total > 0 || !!dd.sleep || hadPill || hadCreatine || dd.activities.some(function (e) { return e.category === 'eating'; }) });
+    });
+    var maxVal = Math.max(1, Math.max.apply(null, Object.keys(sums).map(function (k) { return sums[k]; })));
+
+    // Sleep is noisier night to night, so average it over a longer 15-day window
+    // rather than the 7-day window used for everything else.
+    var sleepMinsList = [], bedMinsList = [], wakeMinsList = [];
+    for (var si = 14; si >= 0; si--) {
+      var sDay = getDay(addDays(today, -si));
+      if (sDay.sleep) {
+        sleepMinsList.push(sDay.sleep.minutes);
+        bedMinsList.push(timeToMinutes(sDay.sleep.bed));
+        wakeMinsList.push(timeToMinutes(sDay.sleep.wake));
+      }
+    }
+
+    var prevSums = {};
+    Object.keys(CATEGORIES).forEach(function (c) { if (c !== 'sleep') prevSums[c] = 0; });
+    for (var pi = 13; pi >= 7; pi--) {
+      var pDay = getDay(addDays(today, -pi));
+      pDay.activities.forEach(function (e) {
+        if (e.category === 'eating' || e.instant) return;
+        prevSums[e.category] = (prevSums[e.category] || 0) + e.minutes;
+      });
+    }
+
+    var html = '<div class="week-dots">';
+    dayTotals.forEach(function (wd) {
+      html += '<div><div class="dot' + (wd.logged ? ' on' : '') + '"></div><div class="wk-day mono">' + weekdayShort(wd.date) + '</div></div>';
+    });
+    html += '</div>';
+
+    html += renderGoalsBlock(sums.study || 0, weekSleepTotal, weekBedList, weekWakeList);
+
+    if (state.longestStreak) {
+      html += '<div class="avg-sleep">Longest streak: <span class="mono">' + state.longestStreak + (state.longestStreak === 1 ? ' day' : ' days') + '</span></div>';
+    }
+    if (sleepMinsList.length > 0) {
+      var avg = Math.round(sleepMinsList.reduce(function (a, b) { return a + b; }, 0) / sleepMinsList.length);
+      html += '<div class="avg-sleep">Avg sleep (last 15 days): <span class="mono">' + fmtMinutes(avg) + '</span> (' + sleepMinsList.length + ' night' + (sleepMinsList.length === 1 ? '' : 's') + ' logged)</div>';
+      html += '<div class="avg-sleep">Avg bedtime <span class="mono">' + avgClockTime(bedMinsList) + '</span> · Avg wake <span class="mono">' + avgClockTime(wakeMinsList) + '</span></div>';
+    }
+    if (pillDays > 0 || creatineDays > 0) {
+      var bits = [];
+      if (pillDays > 0) bits.push('Pill <span class="mono">' + pillDays + '/7</span> days');
+      if (creatineDays > 0) bits.push('Creatine <span class="mono">' + creatineDays + '/7</span> days');
+      html += '<div class="avg-sleep">' + bits.join(' · ') + '</div>';
+    }
+    computeInsights(weekDays).forEach(function (line) {
+      html += '<div class="avg-sleep">' + escapeHtml(line) + '</div>';
+    });
+
+    var entries = Object.keys(sums).map(function (k) { return { key: k, cat: CATEGORIES[k], minutes: sums[k] }; })
+      .filter(function (x) { return x.minutes > 0; })
+      .sort(function (a, b) { return b.minutes - a.minutes; });
+
+    if (entries.length === 0 && sleepMinsList.length === 0 && !dayTotals.some(function (d) { return d.logged; })) {
+      html += '<div class="empty">No activity logged this week yet.</div>';
+    } else {
+      entries.forEach(function (x) {
+        var catStreak = computeCategoryStreak(x.key);
+        var streakBadge = catStreak >= 2 ? ' <span class="mono" style="font-size:11px;color:var(--muted);font-weight:400;">' + catStreak + 'd streak</span>' : '';
+        var delta = weekDeltaLabel(x.minutes, prevSums[x.key] || 0);
+        html += '<div class="bar-row">' +
+          '<div class="bar-head"><span><span style="font-weight:600">' + x.cat.label + '</span>' + streakBadge + '</span><span class="mono" style="color:var(--muted)">' + fmtMinutes(x.minutes) + escapeHtml(delta) + '</span></div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max(4, (x.minutes / maxVal) * 100) + '%;background:' + x.cat.color + '"></div></div>' +
+          '</div>';
+      });
+    }
+    return html;
+  }
+
+  function renderAddSheet() {
+    var presets = loadPresets();
+    var showingNew = state.addSelected === 'new';
+    var isFoodMode = state.addSelected === 'p-eating';
+    var currentModule = MODULES.filter(function (m) { return m.id === state.addSelected; })[0] || null;
+    var currentPreset = presets.filter(function (p) { return p.id === state.addSelected; })[0] || null;
+    var html = '<div class="overlay" data-action="close-add">';
+    html += '<div class="sheet" onclick="event.stopPropagation()">';
+    html += '<div class="handle"></div>';
+    html += '<div class="sheet-title-row"><div class="sheet-title">Log an activity</div><button class="close-btn" data-action="close-add">&times;</button></div>';
+
+    if (state.addSelected) {
+      var selLabel, selColor, selAction;
+      if (showingNew) { selLabel = 'New activity'; selColor = 'var(--ink)'; selAction = 'select-new'; }
+      else if (currentModule) { selLabel = currentModule.label; selColor = CATEGORIES[currentModule.category].color; selAction = 'select-module'; }
+      else { selLabel = currentPreset.name; selColor = CATEGORIES[currentPreset.category] ? CATEGORIES[currentPreset.category].color : CATEGORIES.other.color; selAction = 'select-preset'; }
+      html += '<div class="chips"><button class="chip active" style="background:' + selColor + ';border-color:' + selColor + '" data-action="' + selAction + '" data-id="' + escapeHtml(state.addSelected) + '">' + escapeHtml(selLabel) + ' <span class="x">&times;</span></button></div>';
+    } else {
+      html += '<div class="section-label">Activities</div><div class="chips">';
+      presets.forEach(function (p) {
+        if (isConsumeCategory(p.category)) return;
+        var active = state.addSelected === p.id;
+        var color = CATEGORIES[p.category] ? CATEGORIES[p.category].color : CATEGORIES.other.color;
+        html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + color + ';border-color:' + color : '') + '" data-action="select-preset" data-id="' + p.id + '">';
+        html += escapeHtml(p.name);
+        if (!p.builtin) html += '<span class="x" data-action="remove-preset" data-id="' + p.id + '">&times;</span>';
+        html += '</button>';
+      });
+      MODULES.forEach(function (m) {
+        if (isConsumeCategory(m.category)) return;
+        var active = state.addSelected === m.id;
+        var color = CATEGORIES[m.category].color;
+        html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + color + ';border-color:' + color : '') + '" data-action="select-module" data-id="' + m.id + '">' + m.label + '</button>';
+      });
+      html += '<button class="chip' + (showingNew ? ' active' : '') + '" style="' + (showingNew ? 'background:var(--ink);border-color:var(--ink)' : '') + '" data-action="select-new">New activity</button>';
+      html += '</div>';
+
+      html += '<div class="section-label">Consume</div><div class="chips">';
+      presets.forEach(function (p) {
+        if (!isConsumeCategory(p.category)) return;
+        var active = state.addSelected === p.id;
+        var color = CATEGORIES[p.category] ? CATEGORIES[p.category].color : CATEGORIES.other.color;
+        html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + color + ';border-color:' + color : '') + '" data-action="select-preset" data-id="' + p.id + '">';
+        html += escapeHtml(p.name);
+        if (!p.builtin) html += '<span class="x" data-action="remove-preset" data-id="' + p.id + '">&times;</span>';
+        html += '</button>';
+      });
+      MODULES.forEach(function (m) {
+        if (!isConsumeCategory(m.category)) return;
+        var active = state.addSelected === m.id;
+        var color = CATEGORIES[m.category].color;
+        html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + color + ';border-color:' + color : '') + '" data-action="select-module" data-id="' + m.id + '">' + m.label + '</button>';
+      });
+      html += '</div>';
+    }
+
+    if (showingNew) {
+      html += '<input type="text" id="custom-name" placeholder="Activity name" value="' + escapeHtml(state.addCustomName) + '" style="margin-bottom:12px">';
+      html += '<div class="section-label">Category</div>';
+      html += '<div class="chips">';
+      ['study', 'music', 'workout', 'walk', 'eating', 'other'].forEach(function (c) {
+        var active = state.addCustomCategory === c;
+        html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + CATEGORIES[c].color + ';border-color:' + CATEGORIES[c].color : '') + '" data-action="select-category" data-cat="' + c + '">' + CATEGORIES[c].label + '</button>';
+      });
+      html += '</div>';
+      html += '<label class="toggle-row"><input type="checkbox" id="occasional-toggle"' + (state.addOccasional ? ' checked' : '') + '> Occasional — don&#39;t save this as a preset</label>';
+    }
+
+    if (currentModule) {
+      if (currentModule.type === 'text') {
+        html += '<div class="section-label">' + currentModule.prompt + '</div>';
+        html += '<input type="text" id="course-input" placeholder="e.g. Física II" value="' + escapeHtml(state.addCourseName) + '" style="margin-bottom:14px">';
+      } else {
+        html += '<div class="section-label">' + currentModule.prompt + '</div><div class="chips">';
+        currentModule.options.forEach(function (opt) {
+          var active = currentModule.type === 'multi' ? state.addSubOptions.indexOf(opt) !== -1 : state.addSubOption === opt;
+          var color = CATEGORIES[currentModule.category].color;
+          html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:' + color + ';border-color:' + color : '') + '" data-action="' + (currentModule.type === 'multi' ? 'toggle-sub-option' : 'select-sub-option') + '" data-opt="' + escapeHtml(opt) + '">' + escapeHtml(opt) + '</button>';
+        });
+        html += '</div>';
+      }
+    }
+
+    var isInstantMode = (currentPreset && currentPreset.instant) || (currentModule && currentModule.type === 'single-instant');
+
+    if (isFoodMode) {
+      html += '<div class="section-label">What did you eat?</div>';
+      html += '<input type="text" id="food-name" placeholder="e.g. Banana, milanesa con fideos" value="' + escapeHtml(state.addFoodName) + '" style="margin-bottom:12px">';
+      html += '<div class="section-label">Time (optional)</div>';
+      html += '<input type="time" id="entry-time" value="' + escapeHtml(state.addTime) + '" style="margin-bottom:18px">';
+    } else if (isInstantMode) {
+      html += '<div class="section-label">Time (optional)</div>';
+      html += '<input type="time" id="entry-time" value="' + escapeHtml(state.addTime) + '" style="margin-bottom:18px">';
+    } else {
+      html += '<div class="section-label">Duration</div><div class="chips">';
+      QUICK_MINUTES.forEach(function (m) {
+        var active = state.addMinutes === m;
+        html += '<button class="chip' + (active ? ' active' : '') + '" style="' + (active ? 'background:var(--ink);border-color:var(--ink)' : '') + '" data-action="select-minutes" data-m="' + m + '">' + m + 'm</button>';
+      });
+      html += '</div>';
+      html += '<input type="number" id="minutes-input" class="mono" min="0" value="' + state.addMinutes + '" style="margin-bottom:14px">';
+      if (currentModule && currentModule.id === 'm-aerobics' && state.addSubOption && state.addSubOption !== 'Fútbol') {
+        html += '<div class="section-label">Distance in km (optional)</div>';
+        html += '<input type="number" id="distance-input" class="mono" min="0" step="0.1" placeholder="e.g. 5" value="' + escapeHtml(state.addDistance) + '" style="margin-bottom:14px">';
+      }
+      if (currentModule && currentModule.id === 'm-aerobics' && state.addSubOption === 'Fútbol') {
+        html += renderFieldChips('Result (optional)', 'addFutbolResult', FUTBOL_RESULTS, CATEGORIES.walk.color);
+        html += renderFieldChips('Format (optional)', 'addFutbolFormat', FUTBOL_FORMATS, CATEGORIES.walk.color);
+        html += renderFieldChips('Type (optional)', 'addFutbolType', FUTBOL_TYPES, CATEGORIES.walk.color);
+      }
+      if (currentModule && currentModule.id === 'm-weights') {
+        html += '<div class="section-label">Volume in kg (optional)</div>';
+        html += '<input type="number" id="volume-input" class="mono" min="0" step="0.5" placeholder="e.g. 120" value="' + escapeHtml(state.addVolume) + '" style="margin-bottom:14px">';
+      }
+      html += '<div class="section-label">Time (optional)</div>';
+      html += '<input type="time" id="entry-time" value="' + escapeHtml(state.addTime) + '" style="margin-bottom:14px">';
+      html += '<div class="section-label">Note (optional)</div>';
+      html += '<input type="text" id="note-input" placeholder="e.g. Legs day, Física II, that one song" value="' + escapeHtml(state.addNote) + '" style="margin-bottom:18px">';
+    }
+    var canSave = computeCanSave();
+    html += '<button class="save-btn" data-action="save-entry"' + (canSave ? '' : ' disabled') + '>Save</button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function attachHandlers(day) {
+    var root = document.getElementById('app');
+    root.querySelectorAll('[data-action]').forEach(function (el) {
+      el.addEventListener('click', function (ev) {
+        var action = el.getAttribute('data-action');
+        handleAction(action, el, ev, day);
+      });
+    });
+    var mi = document.getElementById('minutes-input');
+    if (mi) mi.addEventListener('input', function () {
+      state.addMinutes = Math.max(0, parseInt(mi.value, 10) || 0);
+      syncSaveButton();
+    });
+    var cn = document.getElementById('custom-name');
+    if (cn) cn.addEventListener('input', function () { state.addCustomName = cn.value; syncSaveButton(); });
+    var ot = document.getElementById('occasional-toggle');
+    if (ot) ot.addEventListener('change', function () { state.addOccasional = ot.checked; });
+    var fn = document.getElementById('food-name');
+    if (fn) fn.addEventListener('input', function () { state.addFoodName = fn.value; syncSaveButton(); });
+    var ft = document.getElementById('entry-time');
+    if (ft) ft.addEventListener('input', function () { state.addTime = ft.value; });
+    var nt = document.getElementById('note-input');
+    if (nt) nt.addEventListener('input', function () { state.addNote = nt.value; });
+    var ci = document.getElementById('course-input');
+    if (ci) ci.addEventListener('input', function () { state.addCourseName = ci.value; syncSaveButton(); });
+    var dsi = document.getElementById('distance-input');
+    if (dsi) dsi.addEventListener('input', function () { state.addDistance = dsi.value; });
+    var vli = document.getElementById('volume-input');
+    if (vli) vli.addEventListener('input', function () { state.addVolume = vli.value; });
+  }
+
+  function handleAction(action, el, ev, day) {
+    if (action === 'noop') return;
+    ev.stopPropagation();
+    switch (action) {
+      case 'prev-day': state.viewDate = addDays(state.viewDate, -1); render(); break;
+      case 'next-day': state.viewDate = addDays(state.viewDate, 1); render(); break;
+      case 'tab-log': state.tab = 'log'; render(); break;
+      case 'tab-stats': state.tab = 'stats'; render(); break;
+      case 'open-add':
+        state.showAdd = true; state.addSelected = null; state.addCustomName = '';
+        state.addCustomCategory = 'other'; state.addOccasional = false; state.addMinutes = 30;
+        state.addFoodName = ''; state.addTime = ''; state.addNote = '';
+        state.addSubOption = ''; state.addSubOptions = []; state.addCourseName = '';
+        state.addDistance = ''; state.addVolume = '';
+        state.addFutbolResult = ''; state.addFutbolFormat = ''; state.addFutbolType = '';
+        render(); break;
+      case 'close-add': state.showAdd = false; render(); break;
+      case 'open-goals': state.showGoals = true; render(); break;
+      case 'close-goals': state.showGoals = false; render(); break;
+      case 'save-goals':
+        var newGoals = {};
+        var gvSleep = parseFloat(document.getElementById('goal-sleep').value);
+        var gvReg = parseFloat(document.getElementById('goal-reg').value);
+        var gvStudy = parseFloat(document.getElementById('goal-study').value);
+        if (gvSleep > 0) newGoals.sleepHours = gvSleep;
+        if (gvReg > 0) newGoals.regMinutes = Math.round(gvReg);
+        if (gvStudy > 0) newGoals.studyHours = gvStudy;
+        persistGoals(newGoals);
+        state.showGoals = false;
+        render(); break;
+      case 'select-preset':
+        var pid = el.getAttribute('data-id');
+        state.addSelected = (state.addSelected === pid) ? null : pid;
+        render(); break;
+      case 'select-new':
+        state.addSelected = (state.addSelected === 'new') ? null : 'new';
+        render(); break;
+      case 'select-category': state.addCustomCategory = el.getAttribute('data-cat'); render(); break;
+      case 'select-module':
+        var mid = el.getAttribute('data-id');
+        state.addSelected = (state.addSelected === mid) ? null : mid;
+        state.addSubOption = ''; state.addSubOptions = []; state.addCourseName = '';
+        state.addDistance = ''; state.addVolume = '';
+        state.addFutbolResult = ''; state.addFutbolFormat = ''; state.addFutbolType = '';
+        render(); break;
+      case 'select-sub-option':
+        state.addDistance = ''; state.addFutbolResult = ''; state.addFutbolFormat = ''; state.addFutbolType = '';
+        state.addSubOption = el.getAttribute('data-opt');
+        render(); break;
+      case 'select-field':
+        state[el.getAttribute('data-field')] = el.getAttribute('data-value');
+        render(); break;
+      case 'toggle-sub-option':
+        var opt = el.getAttribute('data-opt');
+        var idx = state.addSubOptions.indexOf(opt);
+        if (idx === -1) state.addSubOptions.push(opt); else state.addSubOptions.splice(idx, 1);
+        render(); break;
+      case 'select-minutes': state.addMinutes = parseInt(el.getAttribute('data-m'), 10); render(); break;
+      case 'remove-preset':
+        removeCustomPreset(el.getAttribute('data-id'));
+        if (state.addSelected === el.getAttribute('data-id')) state.addSelected = null;
+        render(); break;
+      case 'save-entry': saveNewEntry(day); break;
+      case 'delete-entry':
+        day.activities = day.activities.filter(function (e) { return e.id !== el.getAttribute('data-id'); });
+        persistDay(state.viewDate, day); break;
+      case 'toggle-note':
+        var noteId = el.getAttribute('data-id');
+        state.expandedNotes[noteId] = !state.expandedNotes[noteId];
+        render(); break;
+      case 'move-up':
+        var upIdx = day.activities.findIndex(function (e) { return e.id === el.getAttribute('data-id'); });
+        if (upIdx > -1) {
+          var upGrp = groupOf(day.activities[upIdx]);
+          var upSwap = -1;
+          for (var upI = upIdx - 1; upI >= 0; upI--) {
+            if (groupOf(day.activities[upI]) === upGrp) { upSwap = upI; break; }
+          }
+          if (upSwap > -1) {
+            var upTmp = day.activities[upSwap];
+            day.activities[upSwap] = day.activities[upIdx];
+            day.activities[upIdx] = upTmp;
+            persistDay(state.viewDate, day);
+          }
+        }
+        break;
+      case 'move-down':
+        var downIdx = day.activities.findIndex(function (e) { return e.id === el.getAttribute('data-id'); });
+        if (downIdx > -1) {
+          var downGrp = groupOf(day.activities[downIdx]);
+          var downSwap = -1;
+          for (var downI = downIdx + 1; downI < day.activities.length; downI++) {
+            if (groupOf(day.activities[downI]) === downGrp) { downSwap = downI; break; }
+          }
+          if (downSwap > -1) {
+            var downTmp = day.activities[downSwap];
+            day.activities[downSwap] = day.activities[downIdx];
+            day.activities[downIdx] = downTmp;
+            persistDay(state.viewDate, day);
+          }
+        }
+        break;
+      case 'edit-sleep':
+        state.sleepEditing = true;
+        state.sleepBed = day.sleep.bed; state.sleepWake = day.sleep.wake;
+        render(); break;
+      case 'clear-sleep':
+        day.sleep = null; persistDay(state.viewDate, day); break;
+      case 'save-sleep':
+        var bed = document.getElementById('sleep-bed').value || state.sleepBed;
+        var wake = document.getElementById('sleep-wake').value || state.sleepWake;
+        var mins = sleepMinutes(bed, wake);
+        day.sleep = { bed: bed, wake: wake, minutes: mins };
+        state.sleepEditing = false; state.sleepBed = bed; state.sleepWake = wake;
+        persistDay(state.viewDate, day); break;
+    }
+  }
+
+  function saveNewEntry(day) {
+    var presets = loadPresets();
+    var currentModule = MODULES.filter(function (m) { return m.id === state.addSelected; })[0] || null;
+    var name, category, minutes, time;
+    var isInstantSave = false;
+    if (state.addSelected === 'p-eating') {
+      name = state.addFoodName.trim();
+      if (!name) return;
+      category = 'eating'; minutes = 0; time = state.addTime || null;
+    } else if (state.addSelected === 'p-pill' || state.addSelected === 'p-creatine') {
+      var instantPreset = presets.filter(function (p) { return p.id === state.addSelected; })[0];
+      name = instantPreset.name; category = instantPreset.category;
+      minutes = 0; time = state.addTime || null;
+      isInstantSave = true;
+    } else if (currentModule && currentModule.type === 'single-instant') {
+      if (!state.addSubOption) return;
+      name = state.addSubOption;
+      category = currentModule.category;
+      minutes = 0; time = state.addTime || null;
+      isInstantSave = true;
+    } else if (currentModule) {
+      if (state.addMinutes <= 0) return;
+      if (currentModule.type === 'text') {
+        name = state.addCourseName.trim();
+        if (!name) return;
+        addCustomPreset(name, currentModule.category);
+      } else if (currentModule.type === 'multi') {
+        if (state.addSubOptions.length === 0) return;
+        name = currentModule.options.filter(function (o) { return state.addSubOptions.indexOf(o) !== -1; }).join(', ');
+      } else {
+        if (!state.addSubOption) return;
+        name = state.addSubOption;
+      }
+      category = currentModule.category;
+      minutes = state.addMinutes; time = state.addTime || null;
+    } else if (state.addSelected === 'new') {
+      name = state.addCustomName.trim();
+      category = state.addCustomCategory;
+      if (!name || state.addMinutes <= 0) return;
+      if (!state.addOccasional) addCustomPreset(name, category);
+      minutes = state.addMinutes; time = state.addTime || null;
+    } else {
+      var preset = presets.filter(function (p) { return p.id === state.addSelected; })[0];
+      if (!preset || state.addMinutes <= 0) return;
+      name = preset.name; category = preset.category;
+      minutes = state.addMinutes; time = state.addTime || null;
+    }
+    var entry = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 8), name: name, category: category, minutes: minutes, ts: Date.now() };
+    if (time) entry.time = time;
+    if (currentModule && currentModule.id === 'm-aerobics') {
+      if (state.addSubOption !== 'Fútbol' && state.addDistance && parseFloat(state.addDistance) > 0) {
+        entry.distance = parseFloat(state.addDistance);
+      }
+      if (state.addSubOption === 'Fútbol') {
+        if (state.addFutbolResult) entry.result = state.addFutbolResult;
+        if (state.addFutbolFormat) entry.format = state.addFutbolFormat;
+        if (state.addFutbolType) entry.matchType = state.addFutbolType;
+      }
+    }
+    if (currentModule && currentModule.id === 'm-weights' && state.addVolume && parseFloat(state.addVolume) > 0) {
+      entry.volume = parseFloat(state.addVolume);
+    }
+    if (isInstantSave) entry.instant = true;
+    if (!isInstantSave && state.addSelected !== 'p-eating' && state.addNote.trim()) entry.note = state.addNote.trim();
+    day.activities.push(entry);
+    state.showAdd = false;
+    persistDay(state.viewDate, day);
+  }
+
+  render();
+
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) safeRender(); });
+  window.addEventListener('pageshow', function () { safeRender(); });
+
+  (function initDb() {
+    if (typeof claude === 'undefined' || !claude.use) return;
+    claude.use('db').then(function (ns) {
+      db = ns;
+      if (db) safeRender(); // triggers a fresh fetch for whatever's on screen
+    }).catch(function () {});
+  })();
+})();
+</script>
+</body>
+</html>
